@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Circle Sequence</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="wrap">
+        <h1>Circle Sequence</h1>
+        <p class="sub">Find the circles in order, 1, 2, 3 … Break the sequence and the next player starts over from 1.</p>
+
+        <!-- Home View -->
+        <div id="home">
+            <div class="card">
+                <label for="nick">Your name</label>
+                <div class="row">
+                    <input type="text" id="nick" maxlength="12" placeholder="Player">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Play on this device</h3>
+                <label>Players</label>
+                <div class="opts" id="pOpts"></div>
+                <label style="margin-top:14px">Circles: <span class="big" id="nVal">8</span></label>
+                <input type="range" id="n" min="3" max="20" value="8">
+                <button class="btn" id="startLocal" style="margin-top:12px">Start game</button>
+            </div>
+
+            <div class="card">
+                <h3>Play online</h3>
+                <div class="row">
+                    <button class="btn" id="createRoom">Create room</button>
+                </div>
+                <div class="row" style="margin-top:12px">
+                    <input type="text" id="codeIn" maxlength="5" placeholder="Room code" style="text-transform:uppercase">
+                    <button class="btn" id="joinRoom">Join</button>
+                </div>
+                <div class="note" id="onNote"></div>
+            </div>
+        </div>
+
+        <!-- Lobby View -->
+        <div id="lobby" class="hide">
+            <div class="card">
+                <div class="note">Room code</div>
+                <div class="code" id="lobCode"></div>
+                <button class="btn ghost" id="copyCode">Copy code</button>
+                <div class="note">Share this code. Up to 4 players can join.</div>
+            </div>
+            <div class="card">
+                <h3>Players</h3>
+                <div class="players" id="lobPlayers"></div>
+                <div id="hostCtl" class="hide">
+                    <label>Circles: <span class="big" id="nVal2">8</span></label>
+                    <input type="range" id="n2" min="3" max="20" value="8">
+                    <button class="btn" id="startOnline" style="margin-top:12px">Start game</button>
+                </div>
+                <div class="note" id="lobNote"></div>
+            </div>
+            <button class="btn ghost" id="leave1">Leave room</button>
+        </div>
+
+        <!-- Game View -->
+        <div id="game" class="hide">
+            <div class="players" id="players"></div>
+            <div class="status">
+                <div class="msg" id="msg"></div>
+                <button class="btn ghost" id="leave2">Leave</button>
+            </div>
+            <div class="board" id="board">
+                <div class="overlay" id="over">
+                    <h2 id="winTxt"></h2>
+                    <button class="btn" id="again">Play again</button>
+                    <div class="note" id="overNote"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="reconnectBanner" class="reconnect-banner hide">
+            <span>Reconnecting...</span>
+        </div>
+        <div id="noticeBanner" class="notice-banner hide">
+            <span id="noticeText"></span>
+        </div>
+        <div id="confirmDialog" class="confirm-overlay hide">
+            <div class="confirm-box">
+                <div class="confirm-text" id="confirmText">Leave this game?</div>
+                <div class="confirm-actions">
+                    <button class="btn ghost" id="confirmCancel">Cancel</button>
+                    <button class="btn" id="confirmOk">Leave</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "circle-sequence",
+  "version": "1.0.0",
+  "description": "Multiplayer Circle Sequence game - find circles in order",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "test:files": "node test/engine.test.js && node test/leave.test.js",
+    "verify:leave": "node scripts/verify-leave.js"
+  },
+  "keywords": [
+    "game",
+    "multiplayer",
+    "websocket"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

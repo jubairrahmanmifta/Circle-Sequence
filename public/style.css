@@ -1,0 +1,394 @@
+:root {
+    --bg: #f4f5f9;
+    --card: #fff;
+    --text: #1d2033;
+    --muted: #6b7089;
+    --border: #dfe2ee;
+    --accent: #5b5bd6;
+    --hid: #8a8fd8;
+    --hid2: #6a6fc4;
+    --ok: #2fa866;
+    --bad: #e5484d;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #14151f;
+        --card: #1e2030;
+        --text: #eceefa;
+        --muted: #9aa0bd;
+        --border: #33364d;
+        --accent: #8b8bf0;
+        --hid: #4a4e9a;
+        --hid2: #383c80;
+        --ok: #3ecf80;
+        --bad: #ff6b70;
+    }
+}
+
+:root[data-theme="dark"] {
+    --bg: #14151f;
+    --card: #1e2030;
+    --text: #eceefa;
+    --muted: #9aa0bd;
+    --border: #33364d;
+    --accent: #8b8bf0;
+    --hid: #4a4e9a;
+    --hid2: #383c80;
+    --ok: #3ecf80;
+    --bad: #ff6b70;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+}
+
+.wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    position: relative;
+}
+
+h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+}
+
+h3 {
+    margin: 0 0 10px;
+    font-size: 1.05rem;
+}
+
+.sub {
+    color: var(--muted);
+    margin: 0 0 18px;
+    font-size: .95rem;
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+}
+
+label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.opts,
+.row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.opt {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.opt.on {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+input[type=text] {
+    flex: 1;
+    min-width: 120px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.big {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.btn {
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.btn.ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    font-size: .9rem;
+}
+
+.code {
+    font-size: 2.2rem;
+    letter-spacing: .3em;
+    font-weight: 800;
+    color: var(--accent);
+    margin: 4px 0 8px;
+    text-transform: uppercase;
+}
+
+.players {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.pl {
+    flex: 1;
+    min-width: 120px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: var(--card);
+}
+
+.pl.turn {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.pl b {
+    display: block;
+    font-size: .95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pl span {
+    font-size: .8rem;
+    color: var(--muted);
+}
+
+.dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.msg {
+    font-weight: 600;
+    flex: 1;
+    min-width: 200px;
+}
+
+.note {
+    color: var(--muted);
+    font-size: .9rem;
+    margin-top: 8px;
+}
+
+.board {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 10 / 7;
+    container-type: inline-size;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.c {
+    position: absolute;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    perspective: 600px;
+}
+
+.c:active {
+    transform: scale(.95);
+}
+
+.c.disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.in {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transition: transform 0.45s;
+}
+
+.c.flip .in {
+    transform: rotateY(180deg);
+}
+
+.f,
+.b {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.f {
+    background: radial-gradient(circle at 30% 30%, var(--hid), var(--hid2));
+    border: 2px solid var(--hid2);
+}
+
+.b {
+    background: var(--card);
+    border: 3px solid var(--ok);
+    color: var(--text);
+    transform: rotateY(180deg);
+    font-size: var(--f, 24px);
+}
+
+.c.wrong .b {
+    border-color: var(--bad);
+    color: var(--bad);
+}
+
+.c.done {
+    cursor: default;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+    text-align: center;
+    padding: 20px;
+    z-index: 5;
+}
+
+.overlay.show {
+    display: flex;
+}
+
+.overlay h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.hide {
+    display: none;
+}
+
+.reconnect-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--bad);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-weight: 600;
+    z-index: 100;
+}
+
+.notice-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--muted);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-weight: 600;
+    z-index: 100;
+}
+
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+.confirm-overlay.hide {
+    display: none;
+}
+
+.confirm-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 300px;
+    width: 90%;
+    text-align: center;
+}
+
+.confirm-text {
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
