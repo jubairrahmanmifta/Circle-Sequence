@@ -1,5 +1,7 @@
 const $ = id => document.getElementById(id);
-const COLORS = ['#5b5bd6', '#e5484d', '#2fa866', '#e08a00'];
+const COLORS = ['#5B4BFF', '#EF4444', '#22C55E', '#FFC928'];
+const CONFETTI_COLORS = ['#5B4BFF', '#3478F6', '#22C55E', '#FFC928', '#EF4444'];
+const CROWN_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 18h18l-1.3-8.5-4.3 3.1L12 5.4 8.6 12.6 4.3 9.5 3 18z"/><rect x="4.5" y="19" width="15" height="1.8" rx=".9"/></svg>';
 
 let ws = null;
 let reconnectAttempts = 0;
@@ -29,6 +31,22 @@ let onlineYouId = null;
 
 let playerCount = 2;
 
+// ----- Theme (presentational only) -----
+function getTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+        localStorage.setItem('nr-theme', theme);
+    } catch (e) { /* storage unavailable — theme still applies for this session */ }
+}
+
+function toggleTheme() {
+    setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+}
+
 // Home view
 function initHome() {
     const pOpts = $('pOpts');
@@ -55,8 +73,10 @@ function initHome() {
     $('again').onclick = playAgain;
     $('leave1').onclick = () => handleLeaveClick();
     $('leave2').onclick = () => handleLeaveClick();
+    $('overHome').onclick = () => performLeave();
+    $('themeToggle').onclick = toggleTheme;
     $('confirmOk').onclick = () => { hideConfirm(); performLeave(); };
-    $('confirmCancel').onclick = () => hideConfirm();
+    $('confirmCancel').onclick = hideConfirm;
     
     $('onNote').textContent = 'Create a room or join with a code to play online.';
 }
@@ -166,58 +186,164 @@ function render() {
 function renderLocal() {
     showView('game');
     renderPlayerBar($('players'), localState.cur, localState.phase === 'play');
-    let msg = '';
     const cur = localState.players[localState.cur];
     if (!cur) return;
     if (localState.locked && localState.flash) {
-        msg = cur.name + ' picked ' + localState.flash + ' but needed ' + localState.next + '. Sequence broken!';
+        setStatus(cur.name + ' picked ' + localState.flash + ' but needed ' + localState.next + '. Sequence broken!');
     } else if (localState.phase === 'play') {
-        msg = cur.name + ', find circle ' + localState.next;
+        setStatus(cur.name + ': find circle', localState.next);
+    } else {
+        setStatus('Sequence complete!');
     }
-    $('msg').textContent = msg;
     renderBoardLocal();
     const ov = $('over');
-    ov.classList.toggle('show', localState.phase === 'over');
-    if (localState.phase === 'over') {
-        $('winTxt').textContent = '🎉 ' + cur.name + ' wins!';
-        $('again').classList.toggle('hide', false);
-        $('overNote').textContent = 'Play again';
+    const isOver = localState.phase === 'over';
+    const wasOver = ov.classList.contains('show');
+    ov.classList.toggle('show', isOver);
+    if (isOver) {
+        updateWinOverlay(cur, {
+            canPlayAgain: true,
+            note: '',
+            celebrate: !wasOver,
+            best: localState.best[localState.cur] || 0,
+            wins: localState.wins[localState.cur] || 0
+        });
         $('again').onclick = () => {
             startLocalRound();
         };
+        $('overHome').onclick = () => performLeave();
     }
 }
 
-function renderPlayerBar(el, turnIdx, showTurn) {
+function renderPlayerBar(el, turnIdx, showTurn, slots) {
     el.innerHTML = '';
     const players = isLocal ? localState.players : (onlineState ? onlineState.players : []);
+
+    // Stats live on the player objects online, but in parallel arrays for local play.
+    const statFor = (p, i) => ({
+        best: isLocal ? (localState.best[i] || 0) : (p.best || 0),
+        wins: isLocal ? (localState.wins[i] || 0) : (p.wins || 0)
+    });
+
+    // Crown the player with the most wins, only when it is unambiguous.
+    let leaderIdx = -1;
+    if (players.length > 1) {
+        let max = 0, count = 0, idx = -1;
+        players.forEach((p, i) => {
+            const w = statFor(p, i).wins;
+            if (w > max) { max = w; count = 1; idx = i; }
+            else if (w === max) { count++; }
+        });
+        if (max > 0 && count === 1) leaderIdx = idx;
+    }
+
     players.forEach((p, i) => {
         const d = document.createElement('div');
-        d.className = 'pl' + (showTurn && i === turnIdx ? ' turn' : '');
+        d.className = 'pl' + (showTurn && i === turnIdx ? ' turn' : '') + (i === leaderIdx ? ' leader' : '');
         const b = document.createElement('b');
         const dot = document.createElement('i');
         dot.className = 'dot';
-        dot.style.background = COLORS[i % 4];
+        dot.style.background = COLORS[i % COLORS.length];
         b.appendChild(dot);
+        const nameEl = document.createElement('span');
+        nameEl.className = 'name';
         let nameTxt = p.name;
         if (!isLocal && onlineState && p.id === onlineYouId) {
             nameTxt += ' (you)';
         }
-        if (showTurn && i === turnIdx) {
-            nameTxt += ' ◀';
+        nameEl.textContent = nameTxt;
+        b.appendChild(nameEl);
+        if (i === leaderIdx) {
+            const crown = document.createElement('span');
+            crown.className = 'pl-crown';
+            crown.title = 'Most wins';
+            crown.innerHTML = CROWN_SVG;
+            b.appendChild(crown);
         }
-        b.appendChild(document.createTextNode(nameTxt));
         d.appendChild(b);
+        const st = statFor(p, i);
         const sp = document.createElement('span');
-        sp.textContent = 'Best streak: ' + (p.best || 0) + ' · Wins: ' + (p.wins || 0);
+        sp.className = 'stats';
+        sp.textContent = 'Best streak: ' + st.best + ' · Wins: ' + st.wins;
         d.appendChild(sp);
         el.appendChild(d);
     });
+
+    // Dashed placeholders for empty lobby slots.
+    if (slots && players.length < slots) {
+        for (let i = players.length; i < slots; i++) {
+            const d = document.createElement('div');
+            d.className = 'pl empty';
+            const dot = document.createElement('i');
+            dot.className = 'dot';
+            d.appendChild(dot);
+            const t = document.createElement('span');
+            t.textContent = 'Waiting for player…';
+            d.appendChild(t);
+            el.appendChild(d);
+        }
+    }
+}
+
+// Status pill with an optional "next number" badge.
+function setStatus(text, next) {
+    const el = $('msg');
+    el.textContent = text;
+    if (typeof next === 'number') {
+        el.appendChild(document.createTextNode(' '));
+        const badge = document.createElement('span');
+        badge.className = 'next-badge';
+        badge.textContent = String(next);
+        el.appendChild(badge);
+    }
+}
+
+function makeStat(label, value) {
+    const d = document.createElement('div');
+    d.className = 'stat';
+    const v = document.createElement('strong');
+    v.textContent = String(value);
+    const l = document.createElement('small');
+    l.textContent = label;
+    d.appendChild(v);
+    d.appendChild(l);
+    return d;
+}
+
+function updateWinOverlay(winner, opts) {
+    if (!winner) return;
+    const options = opts || {};
+    const best = (options.best != null) ? options.best : (winner.best || 0);
+    const wins = (options.wins != null) ? options.wins : (winner.wins || 0);
+    $('winTxt').textContent = winner.name + ' wins!';
+    const stats = $('overStats');
+    stats.innerHTML = '';
+    stats.appendChild(makeStat('Best streak', best));
+    stats.appendChild(makeStat('Total wins', wins));
+    $('again').classList.toggle('hide', !options.canPlayAgain);
+    $('overNote').textContent = options.note || '';
+    if (options.celebrate) showConfetti();
+}
+
+function showConfetti() {
+    const c = $('confetti');
+    if (!c) return;
+    c.innerHTML = '';
+    for (let i = 0; i < 26; i++) {
+        const s = document.createElement('i');
+        s.style.setProperty('--x', (Math.random() * 100).toFixed(1) + '%');
+        s.style.setProperty('--d', (Math.random() * 0.7).toFixed(2) + 's');
+        s.style.setProperty('--r', Math.floor(Math.random() * 360) + 'deg');
+        s.style.setProperty('--c', CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
+        c.appendChild(s);
+    }
 }
 
 function renderBoardLocal() {
     const b = $('board');
-    const key = localState.round + ':L';
+    // Key on the actual layout so a freshly generated board always rebuilds
+    // (e.g. after leaving a game and starting a new one).
+    const key = 'L:' + localState.circles.map(c => c.join(',')).join(';');
     if (b.dataset.r !== key) {
         b.dataset.r = key;
         b.querySelectorAll('.c').forEach(e => e.remove());
@@ -377,8 +503,7 @@ function handleMessage(e) {
             if (onlineState.phase === 'lobby') {
                 showView('lobby');
                 $('lobCode').textContent = onlineState.code;
-                $('lobPlayers').innerHTML = '';
-                renderPlayerBar($('lobPlayers'), 0, false);
+                renderPlayerBar($('lobPlayers'), 0, false, 4);
                 const isHost = onlineYouId && onlineState.hostId === onlineYouId;
                 $('hostCtl').classList.toggle('hide', !isHost);
                 if (isHost) {
@@ -414,44 +539,40 @@ function handleMessage(e) {
 function renderOnline() {
     if (!onlineState) return;
     renderPlayerBar($('players'), onlineState.currentPlayerIndex, onlineState.phase === 'play');
-    let msg = '';
     const cur = onlineState.players[onlineState.currentPlayerIndex];
     if (onlineState.phase === 'over') {
-        msg = 'Sequence complete!';
+        setStatus('Sequence complete!');
     } else if (cur) {
         if (onlineState.locked && onlineState.flash) {
-            msg = cur.name + ' picked ' + onlineState.flash + ' but needed ' + onlineState.next + '. Sequence broken!';
+            setStatus(cur.name + ' picked ' + onlineState.flash + ' but needed ' + onlineState.next + '. Sequence broken!');
         } else {
             const isMyTurn = onlineYouId && cur.id === onlineYouId;
-            if (isMyTurn) {
-                msg = 'Your turn: find circle ' + onlineState.next;
-            } else {
-                msg = cur.name + ' is finding circle ' + onlineState.next;
-            }
+            setStatus(isMyTurn ? 'Your turn: find circle' : cur.name + ' is finding circle', onlineState.next);
         }
     }
-    $('msg').textContent = msg;
     renderBoardOnline();
     const ov = $('over');
-    ov.classList.toggle('show', onlineState.phase === 'over');
-    if (onlineState.phase === 'over') {
-        const cur2 = onlineState.players[onlineState.currentPlayerIndex];
-        $('winTxt').textContent = '🎉 ' + cur2.name + ' wins!';
+    const isOver = onlineState.phase === 'over';
+    const wasOver = ov.classList.contains('show');
+    ov.classList.toggle('show', isOver);
+    if (isOver) {
+        const winner = onlineState.players[onlineState.currentPlayerIndex];
         const isHost = onlineYouId && onlineState.hostId === onlineYouId;
-        $('again').classList.toggle('hide', !isHost);
-        $('overNote').textContent = isHost ? '' : 'Waiting for the host…';
+        updateWinOverlay(winner, { canPlayAgain: !!isHost, note: isHost ? '' : 'Waiting for the host…', celebrate: !wasOver });
         if (isHost) {
             $('again').onclick = () => {
-                ws.send(JSON.stringify({ type: 'play_again' }));
+                sendOnline('play_again');
             };
         }
+        $('overHome').onclick = () => performLeave();
     }
 }
 
 function renderBoardOnline() {
     if (!onlineState) return;
     const b = $('board');
-    const key = 'o:' + onlineState.code + ':' + (onlineState.circles.length) + ':' + onlineState.phase;
+    // Key on room + layout so a new round always rebuilds the board.
+    const key = 'o:' + onlineState.code + ':' + onlineState.circles.map(c => c.join(',')).join(';');
     if (b.dataset.r !== key) {
         b.dataset.r = key;
         b.querySelectorAll('.c').forEach(e => e.remove());
@@ -539,6 +660,8 @@ function performLeave() {
     currentRoomCode = null;
     isLocal = true;
     reconnectAttempts = 0;
+    // Make sure the winner overlay never lingers over the home screen.
+    $('over').classList.remove('show');
     showView('home');
     leaving = false;
 }
