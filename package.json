@@ -1,7 +1,7 @@
 {
-  "name": "circle-sequence",
+  "name": "number-rush",
   "version": "1.0.0",
-  "description": "Multiplayer Circle Sequence game - find circles in order",
+  "description": "Multiplayer Number Rush game - find circles in order",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

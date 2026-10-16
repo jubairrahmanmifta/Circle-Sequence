@@ -1,10 +1,10 @@
-# Circle Sequence
+# Number Rush
 
 A multiplayer web game where players take turns finding numbered circles in order. The server is authoritative for all game state and rules.
 
 ## What it is
 
-Circle Sequence is a turn-based game where numbered circles (1..N) are scattered randomly on a board, all face down. Players must find circles in order: 1, then 2, then 3, and so on by tapping/flipping them. Correct picks let you continue, wrong picks reset and pass the turn to the next player. The first player to reveal the last number wins the round.
+Number Rush is a turn-based game where numbered circles (1..N) are scattered randomly on a board, all face down. Players must find circles in order: 1, then 2, then 3, and so on by tapping/flipping them. Correct picks let you continue, wrong picks reset and pass the turn to the next player. The first player to reveal the last number wins the round.
 
 ## Features
 
@@ -30,7 +30,7 @@ Circle Sequence is a turn-based game where numbered circles (1..N) are scattered
 ## Project Structure
 
 ```
-circle-sequence/
+number-rush/
   package.json        (scripts: start / test / verify:leave)
   server.js           (Express + WebSocket server, game engine, leave handling)
   public/
@@ -48,11 +48,13 @@ circle-sequence/
 ## How to Run Locally
 
 1. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 2. **Start the server**
+
    ```bash
    npm start
    ```
@@ -66,37 +68,18 @@ The server runs on `process.env.PORT || 3000`.
 ## How to Play with Friends
 
 ### On the same Wi-Fi network
+
 1. Find your local IP: `ip addr` or `ifconfig` (e.g., 192.168.1.100)
 2. Start server on one machine: `npm start`
 3. Share `http://YOUR_IP:3000` with friends on the same network
 4. They can create or join rooms just like on localhost
-
-### Over the internet
-Deploy to one of these platforms:
-
-- **[Render](https://render.com/)**: Create a new Web Service from your repo, set build command `npm install`, start command `npm start`
-- **[Railway](https://railway.app/)**: Connect repo, auto-detects Node.js, runs `npm start`
-- **[Fly.io](https://fly.io/)**: Install `flyctl`, run `fly launch`, deploy with `fly deploy`
-- **[ngrok](https://ngrok.com/)**: For quick testing, run `ngrok http 3000` and share the URL
-
-## Deploy on Render (free)
-
-1. Push the project to a GitHub repository.
-2. In Render, create a new **Web Service** and connect that repository.
-3. Set:
-   - **Build command:** `npm install`
-   - **Start command:** `npm start`
-   - **Instance type:** Free
-   - **Health check path:** `/health`
-4. Deploy and open the generated `https://<name>.onrender.com` URL.
-
-Notes: a free instance sleeps after about 15 minutes of inactivity and takes about a minute to wake on the next request. Rooms are held in memory, so they are lost on restart (deploys, sleep/wake, or crashes).
 
 ## WebSocket Message Protocol
 
 All messages are JSON: `{ type, ...payload }`
 
 ### Client → Server
+
 - `create_room {name}` - Create a new room, become host
 - `join_room {code, name}` - Join an existing room
 - `start_game {n}` - Start game with N circles (host only, lobby phase)
@@ -105,6 +88,7 @@ All messages are JSON: `{ type, ...payload }`
 - `leave` - Leave the current room (the socket stays open and can create/join again)
 
 ### Server → Client
+
 - `room_state { ... }` - Full snapshot broadcast after every change
 - `error {message}` - Error message (invalid code, room full, room closed, etc.)
 
@@ -126,6 +110,7 @@ connection all behave the same way:
   closing) and never throws if the room or player is already gone.
 
 ### Room State Structure
+
 ```json
 {
   "code": "ABC12",
@@ -150,7 +135,7 @@ connection all behave the same way:
 - Only current player can make picks
 - Picks ignored while locked (during wrong-pick delay)
 - Already revealed circles cannot be picked again
-- Names sanitized (max 12 chars, only letters, digits, spaces, _ . -)
+- Names sanitized (max 12 chars, only letters, digits, spaces, \_ . -)
 - Cannot join full rooms or games in progress
 - Invalid room codes rejected with clear errors
 - Disconnects handled: lobby players removed, play continues, host promotion, empty rooms deleted
@@ -163,17 +148,20 @@ connection all behave the same way:
 ## Testing
 
 Run the unit tests (Node's built-in test runner):
+
 ```bash
 npm test
 ```
 
 If `node --test` misbehaves on your Node build (some Node 22 builds ship without
 an internal `glob` dependency), run the files directly instead:
+
 ```bash
 npm run test:files
 ```
 
 Tests cover:
+
 - Circle generation produces N unique numbers
 - No overlapping circles
 - Correct pick advances sequence, win detection
@@ -186,9 +174,11 @@ Tests cover:
   default, room deletion on last leave, and safe double-leave
 
 End-to-end check of the leave flow over real WebSockets (spawns the server):
+
 ```bash
 npm run verify:leave
 ```
+
 It verifies: B leaves and A's state drops to one player; the host leaving
 mid-game promotes the guest and ends the round; leave is safe to call twice; an
 abrupt disconnect behaves like leave; and the same socket can create or join
@@ -226,6 +216,7 @@ another room afterwards.
 ## Verification
 
 The implementation includes:
+
 1. ✅ All files created per specification
 2. ✅ Dependencies installed (`express`, `ws`)
 3. ✅ Server starts successfully

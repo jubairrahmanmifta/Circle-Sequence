@@ -675,6 +675,6 @@ module.exports = {
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`Circle Sequence server listening on port ${PORT}`);
+    console.log(`Number Rush server listening on port ${PORT}`);
   });
 }
