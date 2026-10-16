@@ -79,6 +79,19 @@ Deploy to one of these platforms:
 - **[Fly.io](https://fly.io/)**: Install `flyctl`, run `fly launch`, deploy with `fly deploy`
 - **[ngrok](https://ngrok.com/)**: For quick testing, run `ngrok http 3000` and share the URL
 
+## Deploy on Render (free)
+
+1. Push the project to a GitHub repository.
+2. In Render, create a new **Web Service** and connect that repository.
+3. Set:
+   - **Build command:** `npm install`
+   - **Start command:** `npm start`
+   - **Instance type:** Free
+   - **Health check path:** `/health`
+4. Deploy and open the generated `https://<name>.onrender.com` URL.
+
+Notes: a free instance sleeps after about 15 minutes of inactivity and takes about a minute to wake on the next request. Rooms are held in memory, so they are lost on restart (deploys, sleep/wake, or crashes).
+
 ## WebSocket Message Protocol
 
 All messages are JSON: `{ type, ...payload }`

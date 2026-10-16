@@ -3,9 +3,36 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 
+// Deployment / capacity settings (overridable via environment variables).
+const MAX_ROOMS = parseInt(process.env.MAX_ROOMS, 10) || 200;
+const MAX_CONN_PER_IP = parseInt(process.env.MAX_CONN_PER_IP, 10) || 10;
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+
+// Reject cross-origin WebSocket handshakes. Requests without an Origin header
+// (for example Node test clients) are allowed so the existing tests keep passing.
+function originAllowed(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  let host;
+  try {
+    host = new URL(origin).host;
+  } catch (e) {
+    return false;
+  }
+  return host === req.headers.host;
+}
+
+const wss = new WebSocket.Server({
+  server,
+  verifyClient: (info) => originAllowed(info.req)
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -75,6 +102,27 @@ function generateRoomCode() {
 // Room management
 const rooms = new Map();
 const clientRooms = new Map();
+
+// Simultaneous connections per client IP (for the per-IP cap).
+const ipConnections = new Map();
+
+// Behind a proxy (e.g. Render), the real client IP is the first X-Forwarded-For entry.
+function getClientIp(req) {
+  const xff = req.headers && req.headers['x-forwarded-for'];
+  if (xff) {
+    const first = String(xff).split(',')[0].trim();
+    if (first) return first;
+  }
+  return (req.socket && req.socket.remoteAddress) || 'unknown';
+}
+
+function releaseIp(ws) {
+  if (!ws._ip || ws._ipReleased) return;
+  ws._ipReleased = true;
+  const n = (ipConnections.get(ws._ip) || 1) - 1;
+  if (n <= 0) ipConnections.delete(ws._ip);
+  else ipConnections.set(ws._ip, n);
+}
 
 class Room {
   constructor(code) {
@@ -165,7 +213,16 @@ function isRateLimited(ws) {
   return rate.count > MESSAGE_LIMIT;
 }
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  const ip = getClientIp(req);
+  if ((ipConnections.get(ip) || 0) >= MAX_CONN_PER_IP) {
+    sendError(ws, 'Server is busy, try again later');
+    ws.close();
+    return;
+  }
+  ipConnections.set(ip, (ipConnections.get(ip) || 0) + 1);
+  ws._ip = ip;
+
   ws.isAlive = true;
   ws.on('pong', () => {
     ws.isAlive = true;
@@ -195,11 +252,13 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     handleDisconnect(ws);
     messageRates.delete(ws);
+    releaseIp(ws);
   });
   
   ws.on('error', () => {
     handleDisconnect(ws);
     messageRates.delete(ws);
+    releaseIp(ws);
   });
 });
 
@@ -239,6 +298,10 @@ function handleMessage(ws, msg) {
 }
 
 function handleCreateRoom(ws, msg) {
+  if (rooms.size >= MAX_ROOMS) {
+    sendError(ws, 'Server is busy, try again later');
+    return;
+  }
   const name = sanitizeName(msg.name);
   const room = createRoom();
   const playerId = generatePlayerId();
